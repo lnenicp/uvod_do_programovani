@@ -1,0 +1,56 @@
+ZOBRAZENÍ
+
+vstupní hodnoty:
+- jsou volitelné/zadávané uživatelem
+- u jednotlivých vstupních hodnot je kontrolována "správnost" vstupu
+	- zobrazení (proj)
+		- kontrola:	zda je zadáváno pouze jedno písmeno
+				zda zadané písmeno odpovídá jedné z možností (A, L, B, M)
+				(+ pøevedení zadaného písmene na velké)
+	- mìøítko (scale)
+		- kontrola:	zda je zadáváno èíslo
+				zda je èíslo vìtší než 0
+	- polomìr Zemì (R) 
+		- kontrola:	zda je zadáváno èíslo
+				zda je èíslo kladné
+				v pøípadì,kdy je zadána 0, je použita hodnota polomìru ze zadání úlohy
+
+body na osách x, y:
+- body jsou na obou osách generovány ve vzdálenosti 10° a pøevedeny na radiány (u_net, v_net)
+
+
+výpoèet souøadnic bodù:
+- v pøípadì rovnobìžek i poledníkù jsou nejprve definovány funkce pro výpoèet souøadnic
+  v konerétním (jednom) bodì a následnì funkce pro výpoèet souøadnic "sítì"
+
+	- funkce parallels_point(v):
+		- používá se pro výpoèet souøadnic poledníkù u všech zobrazení
+		- výstupem jsou souøadnice bodu v cm, dle vzorce zobrazení a zvoleného mìøítka,
+		  zaokrouhleny na jedno desetinné místo
+
+	- funkce meridians_point(u):
+		- princip výpoètu shodný s funkcí parallels_point
+		- pro každé zobrazení je zde ale použit konrétní odpovídající vzorec
+		- v pøípadì Mercatorva zobrazení bylo navíc nutné rozdìlit výpoèet pro kladné
+		  a záporné hodnoty, z dùvodu použité funkce ln()
+		- výstupem jsou souøadnice bodu v cm, dle vzorce konkrétního zobrazení a zvoleného mìøítka,
+		  zaokrouhleny na jedno desetinné místo
+
+	- funkce parallels_net():
+		- používá se pro výpoèet souøadnic poledníkù u všech zobrazení
+		- nejprve se vytvoøí seznam, do kterého se následnì pomocí "for cyklu"
+		  a funkce parallels_point vypoèítají souøadnice bodù 
+		- výstupem jsou souøadnice bodù v cm, zaokrouhleny na jedno desetinné místo
+
+	- funkce meridians_net():
+		- princip výpoètu opìt shodný s funkcí parallels_net
+		- nejprve se vytvoøí seznam, do kterého se následnì pomocí "for cyklu"
+		  a funkce meridians_point vypoèítají souøadnice bodù 
+		- výstupem jsou souøadnice bodù v cm, zaokrouhleny na jedno desetinné místo
+
+dotazování na konkrétní souøadnice bodu:
+- pro dotazování na souøadnice konkrétního bodu jsou zavedeny promìnné u/v, které slouží
+  jako vstupní parametry funkcí meridians_point a parallels_point
+- hodnoty promìnných u/v jsou zadávány uživatelem (kontrola, zda je zadáváno èíslo)
+- po zadání bodu o souøanicích (0,0) je program ukonèen
+- výstupem výše zmínìných funkcí jsou souøanice požadovaného bodu
