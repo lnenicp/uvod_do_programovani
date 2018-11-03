@@ -1,16 +1,15 @@
 ZOBRAZENÍ
 
 vstupní hodnoty:
-- jsou volitelné/zadávané uživatelem
+- jsou volitelné/zadávané uživatelem - prostøednictvím pøíslišných funkcí
 - u jednotlivých vstupních hodnot je kontrolována "správnost" vstupu
 	- zobrazení (proj)
-		- kontrola:	zda je zadáváno pouze jedno písmeno
-				zda zadané písmeno odpovídá jedné z možností (A, L, B, M)
+		- kontrola:	zda zadané písmeno odpovídá jedné z možností (A, L, B, M)
 				(+ pøevedení zadaného písmene na velké)
 	- mìøítko (scale)
 		- kontrola:	zda je zadáváno èíslo
 				zda je èíslo vìtší než 0
-	- polomìr Zemì (R) 
+	- polomìr Zemì (R)
 		- kontrola:	zda je zadáváno èíslo
 				zda je èíslo kladné
 				v pøípadì,kdy je zadána 0, je použita hodnota polomìru ze zadání úlohy
@@ -23,20 +22,18 @@ výpoèet souøadnic bodù:
 - v pøípadì rovnobìžek i poledníkù jsou nejprve definovány funkce pro výpoèet souøadnic
   v konerétním (jednom) bodì a následnì funkce pro výpoèet souøadnic "sítì"
 
-	- funkce parallels_point(v):
+	- funkce parallels_point:
 		- používá se pro výpoèet souøadnic poledníkù u všech zobrazení
 		- výstupem jsou souøadnice bodu v cm, dle vzorce zobrazení a zvoleného mìøítka,
 		  zaokrouhleny na jedno desetinné místo
 
-	- funkce meridians_point(u):
+	- funkce meridians_point:
 		- princip výpoètu shodný s funkcí parallels_point
 		- pro každé zobrazení je zde ale použit konrétní odpovídající vzorec
-		- v pøípadì Mercatorva zobrazení bylo navíc nutné rozdìlit výpoèet pro kladné
-		  a záporné hodnoty, z dùvodu použité funkce ln()
 		- výstupem jsou souøadnice bodu v cm, dle vzorce konkrétního zobrazení a zvoleného mìøítka,
 		  zaokrouhleny na jedno desetinné místo
 
-	- funkce parallels_net():
+	- funkce parallels_net:
 		- používá se pro výpoèet souøadnic poledníkù u všech zobrazení
 		- nejprve se vytvoøí seznam, do kterého se následnì pomocí "for cyklu"
 		  a funkce parallels_point vypoèítají souøadnice bodù 
