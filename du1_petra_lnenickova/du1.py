@@ -11,66 +11,81 @@ ukol 6371,11 km.
 import math
 import sys
 
-# vstupní hodnota zobrazeni
-proj = input('Zadejte zobrazení:')
-proj = proj.upper()
-if len(proj) != 1 \
-    or proj not in ('A', 'L', 'B', 'M'):
-    sys.exit('Zadejte jednu z naslednujících možností: A - Marinovo zobrazení, L -  Lambertovo zobrazení, B - Braunovo zobrazení, M - Mercatorovo zobrazení')
+def get_proj():
+    '''slouží pro zadání zobrazení'''
+    proj = input('Zadejte zobrazení:')
+    proj = proj.upper()
+    if proj not in ('A', 'L', 'B', 'M'):
+        sys.exit('Zadejte jednu z naslednujících možností: A - Marinovo zobrazení, L -  Lambertovo zobrazení, B - Braunovo zobrazení, M - Mercatorovo zobrazeni')
+    return proj
 
-# vstupní hodnota měřítka
-scale = input('Zadejte měřítko:')
-if scale.isdigit():
-    scale = int(scale)
-    if scale == 0:
-        sys.exit('Zadejte číslo větší než nula.')
-else:
-    sys.exit('Zadejte kladné číslo.')
+def get_scale():
+    '''slouží pro zadnání vstupbí hodnoty měřítka'''
+    scale = input('Zadejte měřítko:')
+    if scale.isdigit():
+        scale = int(scale)
+        if scale == 0:
+            sys.exit('Zadejte číslo větší než nula.')
+    else:
+        sys.exit('Zadejte kladné číslo.')
+    return scale
 
-# vstupní hodnota poloměru Země
-R_def = 637111000
-R_in = input('Zadejte poloměr Země(km):')
-if R_in.isdigit():
-    R = int(R_in)
-    if R > 0:
-        R = int(R) * 100000
-    if R == 0:
-        R = R_def
-    if R < 0:
+def get_R():
+    '''slouží pro zadání vtupní hodnoty poloměru Země, pokud je zadána nula, použije se pomoleěr 6371,11 km'''
+    R_def = 637111000
+    R_in = input('Zadejte poloměr Země(km):')
+    if R_in.isdigit():
+        R = int(R_in)
+        if R > 0:
+            R = int(R) * 100000
+        if R == 0:
+            R = R_def
+        if R < 0:
+            sys.exit('Zadejte kladné číslo')
+    else:
         sys.exit('Zadejte kladné číslo')
-else:
-    sys.exit('Zadejte kladné číslo')
+    return R
 
-## urceni pruseciku (po 10s) s osami x a y
-# rovnobezky
-u_net = []
-for u in range(-90,100, 10):
-    u = u * math.pi / 180
-    u_net.append(u)
+def generate_net_points_u():
+    '''generuje body na ose y po 10 stupních - rovnobezky'''
+    u_net = []
+    for u in range(-90,100, 10):
+        u = u * math.pi / 180
+        u_net.append(u)
+    return u_net
 
-# poledniky
-v_net = []
-for v in range(-180,190, 10):
-    v = v * math.pi / 180
-    v_net.append(v)
+def generate_net_points_v():
+    '''generuje body na ose x po 10 stupních - poledníky'''
+    v_net = []
+    for v in range(-180,190, 10):
+        v = v * math.pi / 180
+        v_net.append(v)
+    return v_net
 
-## VÝPOČET SOUŘADNIC POLEDNÍKŮ
-# výpočet pro jednotlivý bod
-def parallels_point(v):
+def parallels_point(v, R):
+    '''Počítá souřadnici bodu na ose x.
+    Vstupní hodnotou  je zeměpisná délka bodu.
+    Výstupem je souřadnice na ose x v cm.'''
     x = R * v
     cm = round(x / scale, 1)
+    # pokud je vzdálenost větší než 100 cm, vypíše se pomlčka
+    if -100 < cm and cm > 100:
+        cm = '-'
     return cm
 
-# výpočet souřadnic sítě
-def parallels_net():
+def parallels_net(v_net):
+    '''Počítá souřadnice bodů na ose x.
+    Vstupními hodnotami jsou zeměpisné délky bodů.
+    Výstupem jsou souřadnice na ose x v cm.'''
     v_cm = []
     for v in v_net:
-        v_cm.append(parallels_point(v))
+        v_cm.append(parallels_point(v, R))
     return v_cm
 
-## VÝPOČET SOUŘADNIC ROVNOBĚŽEK
-# výpočet pro jednotlivý bod
-def meridians_point(u):
+def meridians_point(u, R):
+    '''Počítá souřadnici bodu na ose y.
+    Vstupní hodnotou je zeměpisná šířka bodu.
+    Výstupem je souřadnice na ose y v cm.'''
     if proj == 'A':
         y = R * u
         cm = round(y / scale, 1)
@@ -81,54 +96,52 @@ def meridians_point(u):
         y = 2 * R * math.tan(u / 2)
         cm = round(y / scale, 1)
     if proj == 'M':
-        # do ln() mohou vstupovat pouze kladna cisla, proto rozdeleni do intervalu a "hra s minusem"
-        if u > 0:
-            y = R * math.log(math.tan(u / 2 + math.pi / 4), math.e)
-            cm = round(y / scale, 1)
-        if u < 0:
-            u = - u
-            y = R * math.log(math.tan(u / 2 + math.pi / 4), math.e)
-            cm = - round(y / scale, 1)
-        if u == 0:
+        if abs(u) == math.pi/2: # poly se zobrazuji v nekonecnu
+            cm = math.inf
+        elif u == 0:
             cm = 0
+        else:
+            y = R * math.log(1 / math.tan((math.pi/2 - u) / 2))
+            cm = round(y / scale, 1)
+    # pokud je vzdálenost větší než 100 cm, vypíše se pomlčka
+    if -100 < cm and cm > 100:
+        cm = '-'
     return cm
 
-# výpočet souřadnic sítě
-def meridians_net():
+def meridians_net(u_net):
+    '''Počítá souřadnice bodů na ose y.
+    Vstupními hodnotami jsou zeměpisné šířky bodů.
+    Výstupem jsou souřadnice na ose y v cm.'''
     u_cm = []
-    if proj in ('A', 'L', 'B'):
-        for u in u_net:
-            u_cm.append(meridians_point(u))
-    if proj == 'M':
-        merid_M = u_net[1:-1] # poly se nezobrazi, proto odebrany hodnoty -90, 90
-        for u in merid_M:
-            u_cm.append(meridians_point(u))
+    for u in u_net:
+        u_cm.append(meridians_point(u, R))
     return u_cm
 
-# tisk výsledku
-print('rovnobežky:',meridians_net())
-print('poledníky:', parallels_net())
+proj = get_proj()
+scale = get_scale()
+R = get_R()
+u_net = generate_net_points_u()
+v_net = generate_net_points_v()
+
+print('poledniky:',parallels_net(v_net))
+print('rovnobezky:',meridians_net(u_net))
 
 
 ## DOTAZOVANÍ NA SOUŘADNICE KONKRÉTNÍHO BODU
 u = None
 v = None
-while u != 0 and v != 0:
+while not (u == 0 and v == 0):
     u_point = input('Zadejte zeměpisnou šířku:')
     if u_point.isdigit():
-        u = int(u_point)* math.pi / 180
+        u = float(u_point)* math.pi / 180
     if not u_point.isdigit():
         sys.exit('Zadejte číslo.')
 
     v_point = input('Zadejte zeměpisnou délku:')
     if v_point.isdigit():
-        v = int(v_point)* math.pi / 180
+        v = float(v_point)* math.pi / 180
     if not v_point.isdigit():
         sys.exit('Zadejte číslo.')
 
-    print('rovnoběžka:', meridians_point(u))
-    print('poledník:', parallels_point(v))
-
-
-
-
+    print('rovnoběžka:', meridians_point(u, R))
+    print('poledník:', parallels_point(v, R))
