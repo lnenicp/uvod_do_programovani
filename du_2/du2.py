@@ -63,6 +63,36 @@ def sort_features(features, half_x, half_y):
             features4.append(feature)
     return features1, features2, features3, features4
 
+def quadtree(input_features, output_json, min_x, min_y, max_x, max_y):
+    if len(input_features) > MAX_FEATURES:
+
+        # vypocte osy, podle kterych se bude delit
+        half_x = get_half_value(min_x, max_x)
+        half_y = get_half_value(min_y, max_y)
+
+        # body rozradi do skupin podle kvadrantu
+        features1, features2, features3, features4 = sort_features(
+            input_features, half_x, half_y)
+
+        # funkce se vola opakovane pro vsechny kvadranty a body se dale/opakovane deli
+        # minima a maxima se predefinuji pro kazdy kvadrant
+        quadtree(
+            features1, output_json,
+            min_x=min_x, min_y=half_y, max_x=half_x, max_y=max_y
+        )
+        quadtree(
+            features2, output_json,
+            min_x=half_x, min_y=half_y, max_x=max_x, max_y=max_y
+        )
+        quadtree(
+            features3, output_json,
+            min_x=min_x, min_y=min_y, max_x=half_x, max_y=half_y
+        )
+        quadtree(
+            features4, output_json,
+            min_x=half_x, min_y=min_y, max_x=max_x, max_y=half_y
+        )
+
 # nacteni dat
 with open(input, encoding="utf-8") as json_data:
     data = geojson.load(json_data)
