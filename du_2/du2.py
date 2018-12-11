@@ -1,10 +1,11 @@
 import geojson
 
 # vtup/vystup
-input = 'vstup.geojson'
-output ='vystup.geojson'
+INPUT_FILENAME = 'input.geojson'
+OUTPUT_FILENAME = 'output.geojson'
+MAX_FEATURES = 50
 
-property_name = 'cluster_id'
+PROPERTY_NAME = 'cluster_id'
 
 def calculate_bbox(features):
     min_x = float('inf')
@@ -44,22 +45,22 @@ def sort_features(features, half_x, half_y):
     features4 = []
     for feature in features:
         # vlozeni "cluster_id", vytvoreni prazdneho str
-        if property_name not in feature['properties']:
-            feature['properties'][property_name] = ''
+        if PROPERTY_NAME not in feature['properties']:
+            feature['properties'][PROPERTY_NAME] = ''
         coordinates = feature['geometry']['coordinates']
         x = coordinates[0]
         y = coordinates[1]
         if x < half_x and y > half_y:
-            feature['properties'][property_name] += '1'
+            feature['properties'][PROPERTY_NAME] += '1'
             features1.append(feature)
         elif x > half_x and y > half_y:
-            feature['properties'][property_name] += '2'
+            feature['properties'][PROPERTY_NAME] += '2'
             features2.append(feature)
         elif x < half_x and y < half_y:
-            feature['properties'][property_name] += '3'
+            feature['properties'][PROPERTY_NAME] += '3'
             features3.append(feature)
         elif x > half_x and y < half_y:
-            feature['properties'][property_name] += '4'
+            feature['properties'][PROPERTY_NAME] += '4'
             features4.append(feature)
     return features1, features2, features3, features4
 
@@ -92,20 +93,34 @@ def quadtree(input_features, output_json, min_x, min_y, max_x, max_y):
             features4, output_json,
             min_x=half_x, min_y=min_y, max_x=max_x, max_y=half_y
         )
-
-# nacteni dat
-with open(input, encoding="utf-8") as json_data:
-    data = geojson.load(json_data)
-
-features = input_json.pop('features')
-
-'''
-# pridani nove properties 'qt_index' a zapis jeji hodnoty do vystupniho souboru
-for i in range(len(data['features'])):
-    inx =  1
-    data['features'][i]['properties']['qt_index'] = inx
-'''
-with open(output, mode="w") as f:
-    geojson.dump(data, f)
+    else:
+        print(f'less than "{MAX_FEATURES}" features, saving to output')
+        output_json['features'] += input_features
 
 
+# fce pro spravne spusteni
+def run():
+    # nacte data
+    with open(INPUT_FILENAME, encoding='utf-8') as input_geojson:
+        input_json = geojson.load(input_geojson)
+
+    # vyjme "část" s fetaures
+    input_features = input_json.pop('features')
+
+    # přepřipravení výstupního souboru - ostatní klíče a hodnoty krome features
+    output_json = input_json
+    # připravení prázdného listu "feautures" pro výstupní soubor
+    output_json['features'] = []
+
+    # výpočet ohraničujícího obdélníku
+    min_x, min_y, max_x, max_y = calculate_bbox(input_features)
+
+    # trideni bodu do kvadratu (soucasne tvorba "cluster_id"
+    quadtree(input_features, output_json,min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
+
+    # finální zápis dat
+    with open(OUTPUT_FILENAME, 'w') as output_geojson:
+        geojson.dump(output_json, output_geojson)
+
+
+run()
