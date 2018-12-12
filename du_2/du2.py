@@ -1,8 +1,10 @@
 import geojson
 import sys
+import os
 
-if (len(sys.argv) < 4):
-    sys.exit("Nedostatečný počet parametrů.")
+def check_count_argument():
+    if (len(sys.argv) < 4):
+        sys.exit("Nedostatečný počet parametrů.")
 
 def get_input_filename():
     ''' Slouží pro zadání vstupního souboru'''
@@ -28,6 +30,29 @@ def get_max_features():
     else:
         sys.exit('Zadejte maximální počet prvků v clusteru(int).')
     return MAX_FEATURES
+
+def check_input_file(INPUT_FILENAME):
+    '''Slouží ke kontrole, zda vstupní soubor existuje a lze otevřít.'''
+    if os.path.isfile(INPUT_FILENAME):
+        try:
+            with open(INPUT_FILENAME, encoding='utf-8') as input_data:
+                input = geojson.load(input_data)
+        except:
+            sys.exit('Vstupní soubor nelze otevřít.')
+    else:
+        sys.exit('Vstupní soubor neexistuje')
+
+def check_correct_geojson():
+    '''Sloouží ke kontrole konektnosti formatu GeoJsonu'''
+    with open(OUTPUT_FILENAME, encoding='utf-8') as output_geojson:
+        data = geojson.load(output_geojson)
+
+    k_list = []
+    for key in data:
+        k_list.append(key)
+
+    if ('type' not in k_list) or ('features' not in k_list):
+        sys.exit('GeoJson není ve správném formátu.')
 
 def calculate_bbox(features):
     '''
@@ -170,9 +195,13 @@ def run():
     with open(OUTPUT_FILENAME, 'w') as output_geojson:
         geojson.dump(output_json, output_geojson)
 
+check_count_argument()
 INPUT_FILENAME = get_input_filename()
+check_input_file(INPUT_FILENAME)
 OUTPUT_FILENAME = get_output_filename()
 MAX_FEATURES = get_max_features()
 run()
+check_correct_geojson()
+
 print('ok')
 
