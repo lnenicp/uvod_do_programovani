@@ -42,7 +42,7 @@ def check_input_file(INPUT_FILENAME):
     else:
         sys.exit('Vstupní soubor neexistuje')
 
-def check_correct_geojson():
+def check_correct_geojson(OUTPUT_FILENAME):
     '''Sloouží ke kontrole konektnosti formatu GeoJsonu'''
     with open(OUTPUT_FILENAME, encoding='utf-8') as output_geojson:
         data = geojson.load(output_geojson)
@@ -201,7 +201,7 @@ check_input_file(INPUT_FILENAME)
 OUTPUT_FILENAME = get_output_filename()
 MAX_FEATURES = get_max_features()
 run()
-check_correct_geojson()
+check_correct_geojson(OUTPUT_FILENAME)
 
 print('ok')
 
