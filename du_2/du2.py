@@ -1,58 +1,42 @@
-import geojson
-import sys
+import argparse
 import os
+import sys
 
-def check_count_argument():
-    if (len(sys.argv) < 4):
-        sys.exit("Nedostatečný počet parametrů.")
+import geojson
 
-def get_input_filename():
-    ''' Slouží pro zadání vstupního souboru'''
-    INPUT_FILENAME = sys.argv[1]
-    if not INPUT_FILENAME[-8:] == '.geojson':
-        sys.exit('Vstupní soubor musí být ve formátu ".geojson"')
-    return INPUT_FILENAME
 
-def get_output_filename():
-    ''' Slouží pro zadání výstupního souboru'''
-    OUTPUT_FILENAME = sys.argv[2]
-    if not OUTPUT_FILENAME[-8:] == '.geojson':
-        sys.exit('Výstupní soubor musí být ve formátu ".geojson"')
-    return OUTPUT_FILENAME
+def int_gt_1(string_value):
+    int_value = int(string_value)
+    if int_value < 1:
+        raise argparse.ArgumentTypeError("must be integer greater than 0")
+    return int_value
 
-def get_max_features():
-    '''Slouží k zadání maximálního počtu bodů v jednom clusteru'''
-    MAX_FEATURES = sys.argv[3]
-    if MAX_FEATURES.lstrip("-").isdigit():
-        MAX_FEATURES=int(MAX_FEATURES)
-        if MAX_FEATURES <= 0:
-            sys.exit('Zadejte kladné číslo.')
-    else:
-        sys.exit('Zadejte maximální počet prvků v clusteru(int).')
-    return MAX_FEATURES
 
-def check_input_file(INPUT_FILENAME):
-    '''Slouží ke kontrole, zda vstupní soubor existuje a lze otevřít.'''
-    if os.path.isfile(INPUT_FILENAME):
-        try:
-            with open(INPUT_FILENAME, encoding='utf-8') as input_data:
-                input = geojson.load(input_data)
-        except:
-            sys.exit('Vstupní soubor nelze otevřít.')
-    else:
-        sys.exit('Vstupní soubor neexistuje')
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'input_geojson',
+        metavar='INPUT',
+        type=argparse.FileType('r', encoding='utf-8'),
+        help='input GeoJSON'
+    )
+    parser.add_argument(
+        'output_geojson',
+        metavar='OUTPUT',
+        type=argparse.FileType('w'),
+        help='output GeoJSON'
+    )
+    parser.add_argument(
+        '-mp', '--max-points',
+        metavar='MAX_POINTS',
+        type=int_gt_1,
+        dest='max_points',
+        default=50,
+        required=False,
+        help='maximum amount of points in cluster'
+    )
+    return parser.parse_args()
 
-def check_correct_geojson(OUTPUT_FILENAME):
-    '''Sloouží ke kontrole konektnosti formatu GeoJsonu'''
-    with open(OUTPUT_FILENAME, encoding='utf-8') as output_geojson:
-        data = geojson.load(output_geojson)
-
-    k_list = []
-    for key in data:
-        k_list.append(key)
-
-    if ('type' not in k_list) or ('features' not in k_list):
-        sys.exit('GeoJson není ve správném formátu.')
 
 def calculate_bbox(features):
     '''
@@ -79,6 +63,7 @@ def calculate_bbox(features):
             max_y = point_y
     return min_x, min_y, max_x, max_y
 
+
 def get_half_value(min_value, max_value):
     '''
     Určí střed mezi minimální a maximalní hodnotou.
@@ -88,6 +73,7 @@ def get_half_value(min_value, max_value):
     :return: "průměr" ze zadaných hodnot
     '''
     return (min_value + max_value) / 2
+
 
 def sort_features(features, half_x, half_y):
     '''
@@ -122,7 +108,8 @@ def sort_features(features, half_x, half_y):
             features4.append(feature)
     return features1, features2, features3, features4
 
-def quadtree(input_features, output_json, MAX_FEATURES, min_x, min_y, max_x, max_y):
+
+def quadtree(input_features, output_json, max_features, min_x, min_y, max_x, max_y):
     '''
     Určuje příslušnost vstupních bodů do konkréních clusterů.
     Nejdříve vypočítá "souřadnice os", podle kterých body rozdělí dle kvadrantů. Rozdělí body do kvadrantů.
@@ -138,7 +125,7 @@ def quadtree(input_features, output_json, MAX_FEATURES, min_x, min_y, max_x, max
     :param max_y: maximální souřadnice na ose y
     :return: id příslušného kvadrantu se zapíše/připíše do properties-cluster_id
     '''
-    if len(input_features) > MAX_FEATURES:
+    if len(input_features) > max_features:
 
         # vypocte osy, podle kterych se bude delit
         half_x = get_half_value(min_x, max_x)
@@ -151,19 +138,19 @@ def quadtree(input_features, output_json, MAX_FEATURES, min_x, min_y, max_x, max
         # funkce se vola opakovane pro vsechny kvadranty a body se dale/opakovane deli
         # minima a maxima se predefinuji pro kazdy kvadrant
         quadtree(
-            features1, output_json, MAX_FEATURES,
+            features1, output_json, max_features,
             min_x=min_x, min_y=half_y, max_x=half_x, max_y=max_y
         )
         quadtree(
-            features2, output_json, MAX_FEATURES,
+            features2, output_json, max_features,
             min_x=half_x, min_y=half_y, max_x=max_x, max_y=max_y
         )
         quadtree(
-            features3, output_json, MAX_FEATURES,
+            features3, output_json, max_features,
             min_x=min_x, min_y=min_y, max_x=half_x, max_y=half_y
         )
         quadtree(
-            features4, output_json, MAX_FEATURES,
+            features4, output_json, max_features,
             min_x=half_x, min_y=min_y, max_x=max_x, max_y=half_y
         )
     else:
@@ -173,9 +160,10 @@ def quadtree(input_features, output_json, MAX_FEATURES, min_x, min_y, max_x, max
 
 # fce pro spravne spusteni
 def run():
+    args = get_args()
     # nacte data
-    with open(INPUT_FILENAME, encoding='utf-8') as input_geojson:
-        input_json = geojson.load(input_geojson)
+    input_json = geojson.load(args.input_geojson)
+    args.input_geojson.close()
 
     # vyjme "část" s fetaures
     input_features = input_json.pop('features')
@@ -189,19 +177,12 @@ def run():
     min_x, min_y, max_x, max_y = calculate_bbox(input_features)
 
     # trideni bodu dle kvadratu, zapis hodnot cluster_id
-    quadtree(input_features, output_json, MAX_FEATURES, min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
+    quadtree(input_features, output_json, args.max_points, min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
 
     # finální zápis dat
-    with open(OUTPUT_FILENAME, 'w') as output_geojson:
-        geojson.dump(output_json, output_geojson)
+    geojson.dump(output_json, args.output_geojson, indent=2)
+    args.output_geojson.close()
 
-check_count_argument()
-INPUT_FILENAME = get_input_filename()
-check_input_file(INPUT_FILENAME)
-OUTPUT_FILENAME = get_output_filename()
-MAX_FEATURES = get_max_features()
+    print('ok')
+
 run()
-check_correct_geojson(OUTPUT_FILENAME)
-
-print('ok')
-
