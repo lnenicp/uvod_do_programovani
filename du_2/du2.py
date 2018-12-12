@@ -165,6 +165,11 @@ def run():
     input_json = geojson.load(args.input_geojson)
     args.input_geojson.close()
 
+    for key in ('type', 'features'):
+        if key not in input_json.keys():
+            print('not valid GeoJSON', file=sys.stderr)
+            sys.exit(2)
+
     # vyjme "část" s fetaures
     input_features = input_json.pop('features')
 
@@ -185,4 +190,6 @@ def run():
 
     print('ok')
 
-run()
+
+if __name__ == '__main__':
+    run()
